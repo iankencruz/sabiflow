@@ -21,8 +21,12 @@ tasks:
       - go mod tidy
 
   dev:
-    desc: Run frontend and backend in watch mode
-    deps: [dev:frontend, dev:backend]
+    desc: Run frontend and backend concurrently with coloured prefixes
+    silent: true
+    cmds:
+      - |
+        gstdbuf -oL task dev:frontend | sed $'s/^/\033[1;35m[frontend]\033[0m /' &
+        gstdbuf -oL task dev:backend | sed $'s/^/\033[38;5;208m[backend]\033[0m /'
 
   dev:frontend:
     desc: Start SvelteKit dev server
