@@ -1,105 +1,19 @@
 
-# --- Go ---
-/backend/tmp/
-/backend/bin/
-/backend/build/
-/backend/cover.out
-*.log
-*.test
-*.out
+# Ignore only the static Svelte build output
+/backend/static/*
+!/backend/static/index.html
+!/backend/static/build/
+!/backend/static/favicon.png
+!/backend/static/manifest.json
 
-# --- SQLC ---
-/backend/internal/db/sqlc/
-
-# --- Node/SvelteKit ---
-/frontend/node_modules/
-frontend/.svelte-kit/
-frontend/.vite/
-frontend/build/
-
-# --- IDE/Editor ---
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-
-# --- Environment/Secrets ---
-.env
-.env.local
-.env.*.local
-
-# --- Docker ---
-**/db_data/
-**/.docker-volume/
-
-# --- Task ---
-.task/
-
-
-node_modules
-/frontend/node_modules
-/frontend/node_modules/*
-
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Env
-.env
-.env.*
-!.env.example
-!.env.test
-
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-
-# SvelteKit source (not needed in Go-only deploy)
-frontend/
-!frontend/.env
+# Optional: ignore build source maps
+/backend/static/build/*.map
 
 # Go build artifacts
 /backend/tmp/
 /backend/bin/
-/backend/static/**/*
-!/backend/static/index.html
-!/backend/static/build/
-/backend/static/build/*.map
 
-# Optional: keep other top-level assets
-!/backend/static/favicon.png
-!/backend/static/manifest.json
-
-# OS / editor junk
-.DS_Store
-*.swp
-
-# SvelteKit source (not needed in Go-only deploy)
-frontend/
-!frontend/.env
-
-# Go build artifacts
-/backend/tmp/
-/backend/bin/
-/backend/static/**/*
-!/backend/static/index.html
-!/backend/static/build/
-/backend/static/build/*.map
-
-# Optional: keep other top-level assets
-!/backend/static/favicon.png
-!/backend/static/manifest.json
-
-# OS / editor junk
+# OS/editor junk
 .DS_Store
 *.swp
 
