@@ -21,7 +21,7 @@ tasks:
     desc: Start SvelteKit dev server
     dir: "{{.FRONTEND_DIR}}"
     cmds:
-      - npm run dev
+      - bun run dev
 
   dev:backend:
     desc: Start Go backend with live reload
@@ -37,7 +37,7 @@ tasks:
     desc: Build SvelteKit for production
     dir: "{{.FRONTEND_DIR}}"
     cmds:
-      - npm run build
+      - bun run build
 
   build:backend:
     desc: Build Go backend binary
@@ -49,7 +49,7 @@ tasks:
     desc: Run linters for Go and frontend
     cmds:
       - golangci-lint run ./backend/...
-      - cd {{.FRONTEND_DIR}} && npm run lint
+      - cd {{.FRONTEND_DIR}} && bun run lint
 
   test:
     desc: Run Go tests
