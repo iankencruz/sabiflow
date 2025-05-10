@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config holds the application configuration...
 type Config struct {
 	Env    string
 	Port   string
@@ -18,7 +19,7 @@ func LoadConfig() *Config {
 
 	cfg := &Config{
 		Env:    getEnv("APP_ENV", "development"),
-		Port:   getEnv("PORT", "3000"),
+		Port:   getEnv("PORT", "8000"),
 		DB_DSN: getEnv("DATABASE_URL", ""),
 	}
 

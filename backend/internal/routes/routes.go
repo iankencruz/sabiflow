@@ -7,10 +7,14 @@ import (
 	"github.com/iankencruz/sabiflow/internal/application"
 )
 
-func Register(r chi.Router, app *application.Application) {
+func Routes(app *application.Application) *chi.Mux {
+	r := chi.NewRouter()
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Sabiflow CRM API root"))
 	})
 
 	// Future: r.Route("/leads", func(r chi.Router) { ... })
+
+	return r
 }
