@@ -1,5 +1,4 @@
-
-version: '3'
+version: "3"
 
 env:
   PROJECT_NAME: sabiflow
@@ -7,11 +6,19 @@ env:
   BACKEND_DIR: backend
   STATIC_OUT_DIR: frontend/build
 
+dotenv: [".env"]
+
 tasks:
   default:
     desc: Show all available tasks
     cmds:
       - task --list
+
+  tidy:
+    desc: Install Go Dependencies
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go mod tidy
 
   dev:
     desc: Run frontend and backend in watch mode
@@ -57,40 +64,85 @@ tasks:
     cmds:
       - go test ./...
 
-  migrate:
-    desc: Apply DB migrations using goose
+  db:create:
+    desc: Create a new Goose SQL migration using task db:create -- migration_name
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir db/migrations postgres "$DATABASE_URL" up
+      - goose -dir internal/database/migrations create "{{.CLI_ARGS}}" sql
+
+  db:up:
+    desc: Apply all Goose DB migrations
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations up
+
+  #      - GOOSE_DRIVER= GOOSE_DBSTRING="{{.DATABASE_URL}}" goose -dir internal/database/migrations up
+
+  db:up-to:
+    desc: Migrate up to a specific version using task db:up-to -- 001_migration
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations up {{.CLI_ARGS}}
+
+  db:down:
+    desc: Roll back the last Goose migration
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations down
+
+  db:down-to:
+    desc: Roll back to a specific version using task db:down-to -- 001_migration
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations down {{.CLI_ARGS}}
+
+  db:status:
+    desc: Show current Goose migration status
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations status
+
+  db:reset:
+    desc: Reset database by running all down and up migrations
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir internal/database/migrations reset
 
   db:generate:
-    desc: Run sqlc to generate type-safe Go code
-    dir: "{{.BACKEND_DIR}}"
+    desc: Run sqlc to generate Go code from SQL queries
+    dir: "{{.BACKEND_DIR}}/internal/database"
     cmds:
       - sqlc generate
 
-  db:up:
-    desc: Start PostgreSQL container
+  db:refresh:
+    desc: Apply migrations and regenerate Go code using sqlc
+    dir: "{{.BACKEND_DIR}}"
     cmds:
-      - docker-compose up -d postgres
+      - task: db:up
+      - task: db:generate
 
-  db:down:
+  docker:up:
+    desc: Start QL container
+    cmds:
+      - docker-compose up -d
+
+  docker:down:
     desc: Stop all Docker containers
     cmds:
       - docker-compose down
 
-  db:logs:
+  docker:logs:
     desc: View database logs
     cmds:
-      - docker-compose logs -f postgres
+      - docker-compose logs -f
 
-  db:psql:
+  docker:psql:
     desc: Open psql shell to the DB container
     cmds:
-      - docker exec -it postgres psql -U user -d sabiflow
+      - docker exec -it  psql -U user -d sabiflow
+
   clean:
     desc: Clean backend and frontend build artifacts
     cmds:
       - rm -rf backend/bin/
       - rm -rf {{.STATIC_OUT_DIR}}
-
