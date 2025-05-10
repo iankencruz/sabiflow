@@ -1,0 +1,37 @@
+
+# --- Go ---
+/backend/tmp/
+/backend/bin/
+/backend/build/
+/backend/cover.out
+*.log
+*.test
+*.out
+
+# --- SQLC ---
+/backend/internal/db/sqlc/
+
+# --- Node/SvelteKit ---
+/frontend/node_modules/
+frontend/.svelte-kit/
+frontend/.vite/
+frontend/build/
+
+# --- IDE/Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Environment/Secrets ---
+.env
+.env.local
+.env.*.local
+
+# --- Docker ---
+**/db_data/
+**/.docker-volume/
+
+# --- Task ---
+.task/

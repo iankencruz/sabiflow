@@ -1,0 +1,96 @@
+
+version: '3'
+
+env:
+  PROJECT_NAME: sabiflow
+  FRONTEND_DIR: frontend
+  BACKEND_DIR: backend
+  STATIC_OUT_DIR: frontend/build
+
+tasks:
+  default:
+    desc: Show all available tasks
+    cmds:
+      - task --list
+
+  dev:
+    desc: Run frontend and backend in watch mode
+    deps: [dev:frontend, dev:backend]
+
+  dev:frontend:
+    desc: Start SvelteKit dev server
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run dev
+
+  dev:backend:
+    desc: Start Go backend with live reload
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - air
+
+  build:
+    desc: Build both frontend and backend
+    deps: [build:frontend, build:backend]
+
+  build:frontend:
+    desc: Build SvelteKit for production
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - npm run build
+
+  build:backend:
+    desc: Build Go backend binary
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go build -o ./tmp/sabiflow ./cmd/api
+
+  lint:
+    desc: Run linters for Go and frontend
+    cmds:
+      - golangci-lint run ./backend/...
+      - cd {{.FRONTEND_DIR}} && npm run lint
+
+  test:
+    desc: Run Go tests
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go test ./...
+
+  migrate:
+    desc: Apply DB migrations using goose
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - goose -dir db/migrations postgres "$DATABASE_URL" up
+
+  db:generate:
+    desc: Run sqlc to generate type-safe Go code
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - sqlc generate
+
+  db:up:
+    desc: Start PostgreSQL container
+    cmds:
+      - docker-compose up -d postgres
+
+  db:down:
+    desc: Stop all Docker containers
+    cmds:
+      - docker-compose down
+
+  db:logs:
+    desc: View database logs
+    cmds:
+      - docker-compose logs -f postgres
+
+  db:psql:
+    desc: Open psql shell to the DB container
+    cmds:
+      - docker exec -it postgres psql -U user -d sabiflow
+  clean:
+    desc: Clean backend and frontend build artifacts
+    cmds:
+      - rm -rf backend/bin/
+      - rm -rf {{.STATIC_OUT_DIR}}
+
