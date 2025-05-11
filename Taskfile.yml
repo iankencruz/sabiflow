@@ -150,3 +150,10 @@ tasks:
     cmds:
       - rm -rf backend/bin/
       - rm -rf {{.STATIC_OUT_DIR}}
+
+  stop:
+    desc: Stop dev frontend and backend processes gracefully
+    silent: true
+    cmds:
+      - pkill -f "npm run dev" || true
+      - pkill -f "backend/tmp/main" || true
