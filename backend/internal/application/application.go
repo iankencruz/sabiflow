@@ -2,7 +2,10 @@ package application
 
 import (
 	"context"
+	"log/slog"
+	"os"
 
+	"github.com/iankencruz/sabiflow/internal/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -10,6 +13,7 @@ import (
 type Application struct {
 	Config *Config
 	DB     *pgxpool.Pool
+	Logger *slog.Logger
 }
 
 func NewApplication() (*Application, error) {
@@ -21,8 +25,11 @@ func NewApplication() (*Application, error) {
 		return nil, err
 	}
 
+	log := logger.New(os.Getenv(cfg.Env))
+
 	return &Application{
 		Config: cfg,
 		DB:     db,
+		Logger: log,
 	}, nil
 }
