@@ -13,7 +13,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		) VALUES (
 			@first_name, @last_name, lower(@email), @password
 		)
-		RETURNING id, first_name, last_name, email, password, created_at
+		RETURNING id, first_name, last_name, email, password, created_at, updated_at
 	`
 
 	args := pgx.NamedArgs{
@@ -31,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&u.Email,
 		&u.Password,
 		&u.CreatedAt,
+		&u.UpdatedAt,
 	)
 
 	return u, err
@@ -38,7 +39,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	const sql = `
-		SELECT id, first_name, last_name, email, password, created_at
+		SELECT id, first_name, last_name, email, password, created_at, updated_at
 		FROM auth.users
 		WHERE email = lower(@email)
 	`
@@ -62,7 +63,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	const sql = `
-		SELECT id, first_name, last_name, email, password, created_at
+		SELECT id, first_name, last_name, email, password, created_at, updated_at
 		FROM auth.users
 		ORDER BY created_at DESC
 	`
@@ -83,6 +84,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&u.Email,
 			&u.Password,
 			&u.CreatedAt,
+			&u.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
