@@ -6,7 +6,7 @@ import (
 	"github.com/iankencruz/sabiflow/internal/shared/sessions"
 )
 
-func RequireAdminAuth(sm *sessions.Manager) func(http.Handler) http.Handler {
+func RequireAuth(sm *sessions.Manager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			userID, err := sm.GetUserID(r)

@@ -39,6 +39,7 @@ func NewApplication() (*Application, error) {
 	authHandler := &auth.AuthHandler{
 		Service:        authService,
 		SessionManager: sessionManager,
+		Logger:         log,
 	}
 
 	return &Application{

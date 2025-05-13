@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/iankencruz/sabiflow/internal/shared/errors"
@@ -22,6 +24,7 @@ type AuthService interface {
 type AuthHandler struct {
 	Service        AuthService
 	SessionManager *sessions.Manager
+	Logger         *slog.Logger
 }
 
 // RegisterHandler handles user registration.
@@ -113,6 +116,12 @@ func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // LogoutHandler clears the user session.
 func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("LogoutHandler called")
+
+	if h.Logger != nil {
+		h.Logger.Info("LogoutHandler called")
+	}
+
 	if err := h.SessionManager.Clear(w, r); err != nil {
 		errResp := errors.Internal("Failed to clear session")
 		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)

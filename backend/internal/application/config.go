@@ -19,8 +19,8 @@ func LoadConfig() *Config {
 
 	cfg := &Config{
 		Env:    getEnv("APP_ENV", "development"),
-		Port:   getEnv("PORT", "8000"),
-		DB_DSN: getEnv("DATABASE_URL", ""),
+		Port:   getEnv("PORT", "8080"),
+		DB_DSN: getEnv("DATABASE_URL", "postgres://user:pass@localhost:5432/sabiflow?sslmode=disable"),
 	}
 
 	if cfg.DB_DSN == "" {

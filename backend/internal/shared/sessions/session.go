@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/sessions"
@@ -16,7 +15,8 @@ const sessionName = "user_session"
 
 // NewManager creates and returns a new session manager.
 func NewManager() *Manager {
-	secret := os.Getenv("SESSION_KEY")
+	// secret := os.Getenv("SESSION_KEY")
+	secret := "Ll+m+0YvOatDVqpSG80o8gs814BRRHvH0nlUkXUrInE="
 	if secret == "" {
 		panic("SESSION_KEY environment variable is not set")
 	}
