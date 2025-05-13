@@ -8,29 +8,34 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-// store is the global cookie session store.
-// It uses a HMAC secret to sign session cookies and prevent tampering.
-var store *sessions.CookieStore
+type Manager struct {
+	store *sessions.CookieStore
+}
 
-func init() {
+const sessionName = "user_session"
+
+// NewManager creates and returns a new session manager.
+func NewManager() *Manager {
 	secret := os.Getenv("SESSION_KEY")
 	if secret == "" {
 		panic("SESSION_KEY environment variable is not set")
 	}
 
-	store = sessions.NewCookieStore([]byte(secret))
+	store := sessions.NewCookieStore([]byte(secret))
 	store.Options = &sessions.Options{
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   false, // set to true in production
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400 * 7, // 7 days
 	}
+
+	return &Manager{store: store}
 }
 
-// SetUserID stores the user ID in the session using the "user_session" cookie.
-func SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {
-	session, err := store.Get(r, "user_session")
+// SetUserID stores the user ID in the session.
+func (m *Manager) SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {
+	session, err := m.store.Get(r, sessionName)
 	if err != nil {
 		return err
 	}
@@ -38,10 +43,9 @@ func SetUserID(w http.ResponseWriter, r *http.Request, userID int32) error {
 	return session.Save(r, w)
 }
 
-// GetUserID retrieves the user ID from the "user_session" cookie.
-// It returns 0 if the session is invalid or missing.
-func GetUserID(r *http.Request) (int32, error) {
-	session, err := store.Get(r, "user_session")
+// GetUserID retrieves the user ID from the session.
+func (m *Manager) GetUserID(r *http.Request) (int32, error) {
+	session, err := m.store.Get(r, sessionName)
 	if err != nil {
 		return 0, err
 	}
@@ -53,12 +57,12 @@ func GetUserID(r *http.Request) (int32, error) {
 	return int32(id), err
 }
 
-// ClearUserSession deletes the session cookie, typically used on logout.
-func ClearUserSession(w http.ResponseWriter, r *http.Request) error {
-	session, err := store.Get(r, "user_session")
+// Clear deletes the session cookie.
+func (m *Manager) Clear(w http.ResponseWriter, r *http.Request) error {
+	session, err := m.store.Get(r, sessionName)
 	if err != nil {
 		return err
 	}
-	session.Options.MaxAge = -1 // Marks cookie for deletion
+	session.Options.MaxAge = -1
 	return session.Save(r, w)
 }

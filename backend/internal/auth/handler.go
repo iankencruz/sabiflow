@@ -1,138 +1,123 @@
 package auth
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
-	"strings"
 
-	"github.com/iankencruz/sabiflow/internal/application"
-	"github.com/iankencruz/sabiflow/internal/auth"
-	"github.com/iankencruz/sabiflow/internal/logger"
-	"github.com/iankencruz/sabiflow/internal/response"
-	"github.com/iankencruz/sabiflow/internal/sessions"
-	"github.com/iankencruz/sabiflow/internal/validators"
+	"github.com/iankencruz/sabiflow/internal/shared/errors"
+	"github.com/iankencruz/sabiflow/internal/shared/response"
+	"github.com/iankencruz/sabiflow/internal/shared/sessions"
+	"github.com/iankencruz/sabiflow/internal/shared/validators"
 )
 
-type RegisterRequest struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+// AuthService defines the business logic interface for authentication.
+type AuthService interface {
+	Register(ctx context.Context, firstName, lastName, email, password string) (*User, error)
+	Login(ctx context.Context, email, password string) (*User, error)
+	Logout(ctx context.Context) error
 }
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+// AuthHandler handles HTTP requests for authentication-related operations.
+type AuthHandler struct {
+	Service        AuthService
+	SessionManager *sessions.Manager
 }
 
-func RegisterUser(app *application.Application) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req RegisterRequest
-
-		// 1. Decode JSON
-		if err := response.DecodeJSON(w, r, &req); err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusBadRequest, "Invalid JSON input", err)
-			return
-		}
-		// Ensure all input is trimmed and lowercased
-		req.FirstName = strings.ToLower(strings.TrimSpace(req.FirstName))
-		req.LastName = strings.ToLower(strings.TrimSpace(req.LastName))
-		req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-
-		// 2. Validate input
-		v := validators.New()
-
-		v.Require("firstname", req.FirstName)
-		v.Require("lastname", req.LastName)
-		v.Require("email", req.Email)
-		v.Require("password", req.Password)
-
-		v.MatchPattern("email", req.Email, validators.EmailRX, "Invalid Email address")
-
-		v.Check("password", len(req.Password) >= 8, "Password must be at least 8 characters long")
-		v.Check("password", validators.UppercaseRX.MatchString(req.Password), "Password must contain at least one uppercase letter")
-		v.Check("password", validators.LowercaseRX.MatchString(req.Password), "Password must contain at least one lowercase letter")
-		v.Check("password", validators.NumberRX.MatchString(req.Password), "Password must contain at least one number")
-		v.Check("password", validators.SpecialRX.MatchString(req.Password), "Password must contain at least one special character")
-
-		if !v.Valid() {
-			response.WriteJSON(w, http.StatusUnprocessableEntity, "Validation error", map[string]interface{}{
-				"errors": v.Errors,
-			})
-			return
-		}
-
-		// 3. Hash password
-		hashed, err := auth.HashPassword(req.Password)
-		if err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusInternalServerError, "Password hashing failed", err)
-			return
-		}
-
-		// 4. Create user in DB
-		user, err := app.Auth.CreateUser(r.Context(), auth.CreateUserParams{
-			FirstName: req.FirstName,
-			LastName:  req.LastName,
-			Email:     req.Email,
-			Password:  hashed,
-		})
-		if err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusInternalServerError, "Failed to create user", err)
-			return
-		}
-
-		// 5. Set session
-		if err := sessions.SetUserID(w, r, user.ID); err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusInternalServerError, "Failed to set session", err)
-			return
-		}
-
-		// 6. Return success response
-		data := map[string]interface{}{
-			"user": map[string]interface{}{
-				"id":         user.ID,
-				"first_name": user.FirstName,
-				"last_name":  user.LastName,
-				"email":      user.Email,
-			},
-		}
-		response.WriteJSON(w, http.StatusOK, "Registered successfully", data)
+// RegisterHandler handles user registration.
+func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Firstname string `json:"firstName"`
+		Lastname  string `json:"lastName"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		errResp := errors.BadRequest("Invalid request payload")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	v := validators.New()
+	v.Require("firstName", input.Firstname)
+	v.Require("lastName", input.Lastname)
+	v.Require("email", input.Email)
+	v.MatchPattern("email", input.Email, validators.EmailRX, "Must be a valid email address")
+	v.Require("password", input.Password)
+	v.MatchPattern("password", input.Password, validators.UppercaseRX, "Must include at least one uppercase letter")
+	v.MatchPattern("password", input.Password, validators.NumberRX, "Must include at least one number")
+
+	if !v.Valid() {
+		errResp := errors.BadRequest("Validation failed")
+		response.WriteJSON(w, errResp.Code, errResp.Message, v.Errors)
+		return
+	}
+
+	user, err := h.Service.Register(r.Context(), input.Firstname, input.Lastname, input.Email, input.Password)
+	if err != nil {
+		errResp := errors.Internal(err.Error())
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	if err := h.SessionManager.SetUserID(w, r, user.ID); err != nil {
+		errResp := errors.Internal("Failed to set session")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusCreated, "User registered", map[string]any{"user": user})
 }
 
-// LoginUser handles user login. It verifies the user's credentials and sets a session cookie.
-func LoginUser(app *application.Application) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req LoginRequest
-		if err := response.DecodeJSON(w, r, &req); err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusBadRequest, "Invalid input", err)
-			return
-		}
-
-		user, err := app.Auth.GetUserByEmail(r.Context(), req.Email)
-		if err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusUnauthorized, "User not found", err)
-			return
-		}
-
-		if err := auth.ComparePassword(user.Password, req.Password); err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusUnauthorized, "Invalid password", err)
-			return
-		}
-
-		if err := sessions.SetUserID(w, r, user.ID); err != nil {
-			logger.WriteJSONError(w, app.Logger, http.StatusInternalServerError, "Failed to set session", err)
-			return
-		}
-
-		data := map[string]interface{}{
-			"user": map[string]interface{}{
-				"id":         user.ID,
-				"first_name": user.FirstName,
-				"last_name":  user.LastName,
-				"email":      user.Email,
-			},
-		}
-
-		response.WriteJSON(w, http.StatusOK, "Logged in successfully", data)
+// LoginHandler handles user login.
+func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		errResp := errors.BadRequest("Invalid login payload")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	v := validators.New()
+	v.Require("email", input.Email)
+	v.MatchPattern("email", input.Email, validators.EmailRX, "Must be a valid email address")
+	v.Require("password", input.Password)
+
+	if !v.Valid() {
+		errResp := errors.BadRequest("Validation failed")
+		response.WriteJSON(w, errResp.Code, errResp.Message, v.Errors)
+		return
+	}
+
+	// Use the service to Check the credentials
+	user, err := h.Service.Login(r.Context(), input.Email, input.Password)
+	if err != nil {
+		errResp := errors.Internal(err.Error())
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	if err := h.SessionManager.SetUserID(w, r, user.ID); err != nil {
+		errResp := errors.Internal("Failed to set session")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Logged in", map[string]any{"user": user})
+}
+
+// LogoutHandler clears the user session.
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if err := h.SessionManager.Clear(w, r); err != nil {
+		errResp := errors.Internal("Failed to clear session")
+		response.WriteJSON(w, errResp.Code, errResp.Message, errResp)
+		return
+	}
+
+	response.WriteJSON(w, http.StatusOK, "Logged out successfully", nil)
 }

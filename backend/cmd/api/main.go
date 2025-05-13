@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/iankencruz/sabiflow/internal/application"
-	"github.com/iankencruz/sabiflow/internal/routes"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 	cfg := app.Config
 
 	log.Println("Starting server on port", cfg.Port)
-	err = http.ListenAndServe(":"+cfg.Port, routes.Routes(app))
+	err = http.ListenAndServe(":"+cfg.Port, application.Routes(app))
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}

@@ -3,23 +3,23 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/iankencruz/sabiflow/internal/sessions"
+	"github.com/iankencruz/sabiflow/internal/shared/sessions"
 )
 
-// RequireAdminAuth ensures the user is authenticated before accessing /api/admin/* routes.
-// It checks for a valid user session and redirects to /login if unauthenticated.
-func RequireAdminAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, err := sessions.GetUserID(r)
-		if err != nil || userID == 0 {
-			// Redirect to login if not authenticated
-			http.Redirect(w, r, "/login", http.StatusFound)
-			return
-		}
+func RequireAdminAuth(sm *sessions.Manager) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, err := sm.GetUserID(r)
+			if err != nil || userID == 0 {
+				http.Redirect(w, r, "/login", http.StatusFound)
+				return
+			}
 
-		// Optionally: attach user ID to context for later use
-		// r = r.WithContext(context.WithValue(r.Context(), "user_id", userID))
+			// Optionally add userID to context
+			// ctx := context.WithValue(r.Context(), "user_id", userID)
+			// r = r.WithContext(ctx)
 
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(w, r)
+		})
+	}
 }
