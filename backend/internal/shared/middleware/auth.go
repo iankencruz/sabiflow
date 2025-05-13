@@ -10,7 +10,7 @@ import (
 // It checks for a valid user session and redirects to /login if unauthenticated.
 func RequireAdminAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID, err := sessions.GetUserIDFromSession(r)
+		userID, err := sessions.GetUserID(r)
 		if err != nil || userID == 0 {
 			// Redirect to login if not authenticated
 			http.Redirect(w, r, "/login", http.StatusFound)

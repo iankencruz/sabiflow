@@ -10,28 +10,38 @@ import (
 )
 
 type StandardResponse struct {
-	Status  string      `json:"status"`  // "success" or "error"
-	Message string      `json:"message"` // any string
-	Data    interface{} `json:"data"`    // can be null or any JSON type
+	Status  string      `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 // WriteJSON sends a standardised success response as JSON.
+
 func WriteJSON(w http.ResponseWriter, statusCode int, message string, data interface{}) error {
 	resp := StandardResponse{
-		Status:  http.StatusText(statusCode), // e.g. "OK", "Created", "http.StatusInternalServerError", etc
+		Status:  http.StatusText(statusCode),
 		Message: message,
 		Data:    data,
 	}
 
 	js, err := json.Marshal(resp)
 	if err != nil {
+		// Log and fallback to plain-text error response
+		fmt.Println("❌ WriteJSON marshal error:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return err
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_, err = w.Write(js)
-	return err
+
+	if _, err := w.Write(js); err != nil {
+		fmt.Println("❌ WriteJSON write error:", err)
+		return err
+	}
+
+	fmt.Println("✅ WriteJSON sent:", string(js))
+	return nil
 }
 
 // DecodeJSON parses the request body into the dst struct.

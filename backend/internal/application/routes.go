@@ -1,4 +1,4 @@
-package routes
+package application
 
 import (
 	"encoding/json"
@@ -8,7 +8,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/iankencruz/sabiflow/internal/application"
-	"github.com/iankencruz/sabiflow/internal/middleware"
+	"github.com/iankencruz/sabiflow/internal/handlers"
+	"github.com/iankencruz/sabiflow/internal/response"
+	"github.com/iankencruz/sabiflow/internal/sessions"
 )
 
 func Routes(app *application.Application) *chi.Mux {
@@ -23,33 +25,22 @@ func Routes(app *application.Application) *chi.Mux {
 	}))
 
 	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	// ✅ Main API group
+	// ✅ API Routes
 	r.Route("/api", func(r chi.Router) {
-		// Health check
 		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]string{
-				"message": "Connected to Sabiflow backend ✅",
-			})
+			response.WriteJSON(w, http.StatusOK, "Connected to Sabiflow backend ✅", "Data will go here")
 		})
 
-		// Auth endpoints
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/login", app.Auth.LoginUser)
-			// r.Post("/register", ...)
-			// r.Post("/logout", ...)
+			// Only include handlers that exist
+			r.Post("/login", func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte("TODO: Login handler"))
+			})
+
+			r.Post("/register", handlers.RegisterUser(app))
 		})
-
-		// ✅ Admin-only endpoints (protected)
-		// r.Route("/admin", func(r chi.Router) {
-		// 	r.Use(authmw.RequireAdminAuth)
-		//
-		// 	r.Get("/clients", app.Admin.GetClients)
-		// 	r.Post("/invoices", app.Admin.CreateInvoice)
-		// 	// Add more secured admin endpoints here
-		// })
-
-		// Other modules like CRM can go here
 	})
 
 	// ✅ Final fallback
@@ -62,6 +53,13 @@ func Routes(app *application.Application) *chi.Mux {
 				"error":   "Not found",
 				"message": "No API route matches this path",
 			})
+			return
+		}
+
+		// ❗ Protect all fallback routes with session check
+		userID, err := sessions.GetUserID(r)
+		if err != nil || userID == 0 {
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 

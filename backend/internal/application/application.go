@@ -5,7 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/iankencruz/sabiflow/internal/logger"
+	"github.com/iankencruz/sabiflow/internal/auth"
+	"github.com/iankencruz/sabiflow/internal/core/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,6 +15,7 @@ type Application struct {
 	Config *Config
 	DB     *pgxpool.Pool
 	Logger *slog.Logger
+	Auth   *auth.Queries
 }
 
 func NewApplication() (*Application, error) {
@@ -31,5 +33,6 @@ func NewApplication() (*Application, error) {
 		Config: cfg,
 		DB:     db,
 		Logger: log,
+		Auth:   auth.New(db),
 	}, nil
 }
