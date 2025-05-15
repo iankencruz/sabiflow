@@ -84,13 +84,13 @@ tasks:
     desc: Create a new Goose SQL migration using task db:create -- migration_name
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations create "{{.CLI_ARGS}}" sql
+      - goose -dir ../migrations create "{{.CLI_ARGS}}" sql
 
   db:up:
     desc: Apply all Goose DB migrations
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations up
+      - goose -dir ../migrations up
 
   #      - GOOSE_DRIVER= GOOSE_DBSTRING="{{.DATABASE_URL}}" goose -dir internal/database/migrations up
 
@@ -98,31 +98,31 @@ tasks:
     desc: Migrate up to a specific version using task db:up-to -- 001_migration
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations up {{.CLI_ARGS}}
+      - goose -dir ../migrations up {{.CLI_ARGS}}
 
   db:down:
     desc: Roll back the last Goose migration
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations down
+      - goose -dir ../migrations down
 
   db:down-to:
     desc: Roll back to a specific version using task db:down-to -- 001_migration
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations down {{.CLI_ARGS}}
+      - goose -dir ..//migrations down {{.CLI_ARGS}}
 
   db:status:
     desc: Show current Goose migration status
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations status
+      - goose -dir ../migrations status
 
   db:reset:
     desc: Reset database by running all down and up migrations
     dir: "{{.BACKEND_DIR}}"
     cmds:
-      - goose -dir internal/database/migrations reset
+      - goose -dir ../migrations reset
 
   db:generate:
     desc: Run sqlc to generate Go code from SQL queries
