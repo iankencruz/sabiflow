@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { PUBLIC_API_URL } from '$env/static/public';
 	import { writable } from 'svelte/store';
 	import { EyeOff, Eye } from '@lucide/svelte';
 
@@ -23,7 +22,7 @@
 		success.set('');
 		fieldErrors.set({});
 
-		const res = await fetch(`${PUBLIC_API_URL}/auth/register`, {
+		const res = await fetch('/api/auth/register', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include', // ✅ IMPORTANT

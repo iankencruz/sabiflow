@@ -1,27 +1,22 @@
 <script lang="ts">
-	import { PUBLIC_API_URL } from '$env/static/public';
-	import { onMount } from 'svelte';
-	let name = '';
+	import { getContext } from 'svelte';
+	import type { User } from '$lib/types/user';
 
-	onMount(async () => {
-		try {
-			const res = await fetch(`${PUBLIC_API_URL}/user/me`, {
-				credentials: 'include'
-			});
-			const json = await res.json();
-			if (json?.data?.user) {
-				const { firstName, lastName } = json.data.user;
-				name = `${firstName} ${lastName}`;
-			}
-		} catch (e) {
-			console.error('User not logged in');
-		}
-	});
+	let { user, setUser, clearUser } = getContext('userStore') as {
+		user: User | null;
+		setUser: (user: User) => void;
+		clearUser: () => void;
+	};
+
+	let name: string | null = null;
+	if (user) {
+		name = `${user.firstName} ${user.lastName}`.trim();
+	}
 </script>
 
-<h1 class="text-2xl font-bold">
+<h1 class="mt-10 text-center text-2xl font-bold">
 	{#if name}
-		Hello, {name} 👋
+		Welcome, {name}
 	{:else}
 		Welcome to Sabiflow
 	{/if}

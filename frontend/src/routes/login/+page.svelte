@@ -8,7 +8,7 @@
 	async function handleLogin(e: SubmitEvent) {
 		e.preventDefault();
 
-		const res = await fetch(`${PUBLIC_API_URL}/auth/login`, {
+		const res = await fetch('/api/auth/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include',
