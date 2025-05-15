@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../app.css';
 	import { setContext } from 'svelte';
 	import * as userStore from '$lib/stores/userStore.svelte';
 
