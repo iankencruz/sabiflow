@@ -56,3 +56,15 @@ func (s *AuthServiceImpl) Login(ctx context.Context, email, password string) (*U
 func (s *AuthServiceImpl) Logout(ctx context.Context) error {
 	return nil
 }
+
+func (s *AuthServiceImpl) CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error) {
+	return s.Repo.CreateUserOAuth(ctx, fullName, email)
+}
+
+func (s *AuthServiceImpl) GetUserByID(ctx context.Context, id int32) (*User, error) {
+	return s.Repo.GetByID(ctx, id)
+}
+
+func (s *AuthServiceImpl) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	return s.Repo.GetByEmail(ctx, email)
+}
