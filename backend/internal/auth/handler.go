@@ -195,19 +195,22 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, os.Getenv("FRONTEND_SUCCESS_REDIRECT_URL"), http.StatusSeeOther)
 }
 
+// GetAuthenticatedUser returns the authenticated user or null if unauthenticated.
+
 func (h *AuthHandler) GetAuthenticatedUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := h.SessionManager.GetUserID(r)
-	fmt.Println("🧪 incoming /user/me request, userID:", userID, "err:", err)
+	w.Header().Set("Content-Type", "application/json")
+
 	if err != nil || userID == 0 {
-		response.WriteJSON(w, http.StatusUnauthorized, "Not authenticated", nil)
+		json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
 		return
 	}
 
 	user, err := h.Service.GetUserByID(r.Context(), userID)
 	if err != nil {
-		response.WriteJSON(w, http.StatusInternalServerError, "User lookup failed", nil)
+		json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
 		return
 	}
 
-	response.WriteJSON(w, http.StatusOK, "User details", user)
+	json.NewEncoder(w).Encode(map[string]interface{}{"user": user})
 }

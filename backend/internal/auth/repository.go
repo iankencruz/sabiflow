@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByID(ctx context.Context, id int32) (*User, error)
 	CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error)
+	GetUserByEmail(ctx context.Context, email string) (*User, error)
 }
 
 type PgxUserRepository struct {
@@ -118,4 +119,19 @@ func (r *PgxUserRepository) CreateUserOAuth(ctx context.Context, fullName, email
 	}
 
 	return &user, nil
+}
+
+func (r *PgxUserRepository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	query := `
+		SELECT id, first_name, last_name, email
+		FROM auth.users
+		WHERE email = @email
+	`
+	args := pgx.NamedArgs{"email": email}
+	var u User
+	err := r.DB.QueryRow(ctx, query, args).Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }

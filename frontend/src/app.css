@@ -1,3 +1,13 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+
+
+html {
+	@apply h-full bg-gray-50;
+}
+
+body {
+	@apply h-full;
+}

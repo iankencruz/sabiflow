@@ -1,4 +1,5 @@
 import adapter from '@sveltejs/adapter-static';
+import path from 'path';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 const config = {
@@ -12,6 +13,13 @@ const config = {
 		}),
 		paths: {
 			base: ''
+		},
+		alias: {
+			$components: path.resolve('src/lib/components'),
+			$lib: path.resolve('src/lib'),
+			$stores: path.resolve('src/lib/stores'),
+			$src: path.resolve('src'),
+			$assets: path.resolve('src/assets'),
 		}
 	}
 };

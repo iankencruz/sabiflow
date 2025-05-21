@@ -22,7 +22,7 @@
 		success.set('');
 		fieldErrors.set({});
 
-		const res = await fetch('/api/auth/register', {
+		const res = await fetch('/api/v1/auth/register', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include', // ✅ IMPORTANT
@@ -47,6 +47,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Login | Sabiflow</title>
+	<meta name="description" content="Login to Sabiflow" />
+</svelte:head>
 <!--
   This example requires updating your template:
 

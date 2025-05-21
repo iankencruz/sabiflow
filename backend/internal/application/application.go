@@ -32,7 +32,7 @@ func NewApplication() (*Application, error) {
 	log := logger.New(os.Getenv(cfg.Env))
 
 	// Initialize the Session Manager
-	sessionManager := sessions.NewManager()
+	sessionManager := sessions.NewManager(db)
 
 	userRepo := auth.NewUserRepository(db)
 	authService := &auth.AuthServiceImpl{Repo: userRepo}
