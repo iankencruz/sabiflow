@@ -20,6 +20,13 @@ vite.config.js.timestamp-*
 symlink-from
 .idea/
 
+.env*
+.env
+./.env
+
+# ignore all files ending in .env
+# except for the .env.example file
+.env
 
 
 # Ignore only the static Svelte build output
