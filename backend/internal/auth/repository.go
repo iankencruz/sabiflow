@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id int32) (*User, error)
 	CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetGroupPermissions(ctx context.Context, userID int32) ([]string, error)
 }
 
 type PgxUserRepository struct {
@@ -134,4 +135,36 @@ func (r *PgxUserRepository) GetUserByEmail(ctx context.Context, email string) (*
 		return nil, err
 	}
 	return &u, nil
+}
+
+func (r *PgxUserRepository) GetGroupPermissions(ctx context.Context, userID int32) ([]string, error) {
+	query := `
+		SELECT p.code
+		FROM auth.users u
+		JOIN auth.permission_groups pg ON u.group_id = pg.id
+		JOIN auth.group_permissions gp ON gp.group_id = pg.id
+		JOIN auth.permissions p ON p.id = gp.permission_id
+		WHERE u.id = @user_id
+	`
+
+	args := pgx.NamedArgs{
+		"user_id": userID,
+	}
+
+	rows, err := r.DB.Query(ctx, query, args)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var perms []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		perms = append(perms, code)
+	}
+
+	return perms, nil
 }

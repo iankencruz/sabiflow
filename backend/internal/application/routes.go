@@ -1,89 +1,107 @@
+// internal/routes/routes.go
 package application
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	mw "github.com/iankencruz/sabiflow/internal/shared/middleware"
-	"github.com/iankencruz/sabiflow/internal/shared/response"
+
+	mw "github.com/iankencruz/sabiflow/internal/shared/middleware" // RequireAuth, Can, …
+	"github.com/iankencruz/sabiflow/internal/shared/response"      // WriteJSON helper
 )
 
+// Router returns the fully-wired chi router.
+// Call this from cmd/api/main.go *after* you construct Application.
 func Routes(app *Application) *chi.Mux {
+	//--------------------------------------------------------------------
+	// One-time injection so the simple Can/CanAny/CanAll wrappers work
+	//--------------------------------------------------------------------
+	mw.InitPermissionMiddleware(app.SessionManager, app.UserRepo)
+
+	//--------------------------------------------------------------------
+	// Root router + global middleware
+	//--------------------------------------------------------------------
 	r := chi.NewRouter()
 
-	// CORS (allow frontend app to make requests)
-
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"}, // <- frontend origin
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	}))
-
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	//--------------------------------------------------------------------
+	// API v1
+	//--------------------------------------------------------------------
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			// Ping Route
-			r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-				response.WriteJSON(w, http.StatusOK, "Connected to Sabiflow backend ✅", "Data will go here")
+
+			// ---------------- Health check ----------------
+			r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
+				response.WriteJSON(w, http.StatusOK,
+					"Connected to Sabiflow backend ✅", nil)
 			})
 
-			// Authentication Routes
+			// ---------------- Auth ------------------------
 			r.Route("/auth", func(r chi.Router) {
-				// Only include handlers that exist
 				r.Post("/login", app.AuthHandler.LoginHandler)
 				r.Post("/register", app.AuthHandler.RegisterHandler)
-
-				// r.With(mw.RequireAuth(app.AuthHandler.SessionManager)).Post("/logout", app.AuthHandler.LogoutHandler)
 				r.Post("/logout", app.AuthHandler.LogoutHandler)
 
-				// router.HandleFunc("/api/auth/google/login", app.GoogleLoginHandler)
+				// Google OAuth2
 				r.HandleFunc("/google/login", app.AuthHandler.GoogleLogin)
 				r.HandleFunc("/google/callback", app.AuthHandler.GoogleCallback)
+
+				// Front-end uses this once per tab
 				r.Get("/me", app.AuthHandler.GetAuthenticatedUser)
-
 			})
 
-			//  API Routes
+			// ----------- Protected API group --------------
 			r.Group(func(r chi.Router) {
-				r.Use(mw.RequireAuth(app.AuthHandler.SessionManager))
-			})
+				// Session must be valid
+				r.Use(mw.RequireAuth(app.SessionManager))
 
+				// Example of fine-grained authorisation:
+				//
+				// r.With(mw.Can("projects:read")).Get(
+				//	   "/projects", app.ProjectHandler.List)
+				//
+				// r.With(mw.CanAny("contacts:read", "contacts:write")).Post(
+				//     "/contacts", app.ContactHandler.Create)
+			})
 		})
 	})
 
-	// ✅ Final fallback
-	r.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":   "Not found",
-				"message": "No API route matches this path",
-			})
+	//--------------------------------------------------------------------
+	// SPA fallback & JSON 404 for unknown /api/* paths
+	//--------------------------------------------------------------------
+	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
+		// If it looks like an API call, return structured JSON
+		if strings.HasPrefix(req.URL.Path, "/api/") {
+			response.WriteJSON(w, http.StatusNotFound,
+				"No API route matches this path",
+				map[string]string{"path": req.URL.Path})
 			return
 		}
 
-		// Serve static file if it exists
+		// Try to serve a real static asset first
 		fs := http.Dir("./static")
-		fileServer := http.FileServer(fs)
-		if f, err := fs.Open(r.URL.Path); err == nil {
+		if f, err := fs.Open(req.URL.Path); err == nil {
 			defer f.Close()
 			if stat, _ := f.Stat(); stat != nil && !stat.IsDir() {
-				fileServer.ServeHTTP(w, r)
+				http.FileServer(fs).ServeHTTP(w, req)
 				return
 			}
 		}
 
-		// Otherwise, serve the SPA entrypoint (SvelteKit index.html)
-		http.ServeFile(w, r, "./static/index.html")
-	}))
+		// Otherwise fall back to the SvelteKit index.html
+		http.ServeFile(w, req, "./static/index.html")
+	})
 
 	return r
 }

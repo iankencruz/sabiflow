@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"log/slog"
-	"os"
 
 	"github.com/iankencruz/sabiflow/internal/auth"
 	"github.com/iankencruz/sabiflow/internal/shared/logger"
@@ -13,10 +12,12 @@ import (
 
 // Create a new Application struct
 type Application struct {
-	Config      *Config
-	DB          *pgxpool.Pool
-	Logger      *slog.Logger
-	AuthHandler *auth.AuthHandler
+	Config         *Config
+	DB             *pgxpool.Pool
+	Logger         *slog.Logger
+	AuthHandler    *auth.AuthHandler
+	SessionManager *sessions.Manager
+	UserRepo       auth.UserRepository
 }
 
 func NewApplication() (*Application, error) {
@@ -29,8 +30,7 @@ func NewApplication() (*Application, error) {
 	}
 
 	// Initialize the Logger
-	log := logger.New(os.Getenv(cfg.Env))
-
+	log := logger.New(cfg.Env)
 	// Initialize the Session Manager
 	sessionManager := sessions.NewManager(db)
 
@@ -43,9 +43,11 @@ func NewApplication() (*Application, error) {
 	}
 
 	return &Application{
-		Config:      cfg,
-		DB:          db,
-		Logger:      log,
-		AuthHandler: authHandler,
+		Config:         cfg,
+		DB:             db,
+		Logger:         log,
+		AuthHandler:    authHandler,
+		SessionManager: sessionManager,
+		UserRepo:       userRepo,
 	}, nil
 }
