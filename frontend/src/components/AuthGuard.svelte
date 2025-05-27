@@ -1,11 +1,9 @@
-<!-- src/lib/components/AuthGuard.svelte -->
-
 <script lang="ts">
-	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
-	import { isAuthenticated, initAuth, hasRole } from '$lib/stores/auth';
-	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import type { Snippet } from 'svelte';
+	import { getUserContext } from '$lib/stores/user.svelte';
 
 	interface Props {
 		requiredRole?: string;
@@ -23,36 +21,41 @@
 		children
 	}: Props = $props();
 
+	const { user, hasRole } = getUserContext();
+
 	let loading = $state(true);
 	let authorized = $state(false);
 
-	// ✅ Fetch session info from /api/auth/me
-
-	(async () => {
-		await initAuth();
-		checkAuth();
-		loading = false;
-	})();
-
-	function checkAuth() {
-		if (!$isAuthenticated) {
+	$effect(() => {
+		// If no user logged in
+		if (!user.id) {
 			authorized = false;
 
 			if (redirect && browser) {
-				goto('/login');
+				if (rememberRedirect) {
+					sessionStorage.setItem('sabiflow:redirect', page.url.pathname);
+				}
+				goto(redirectTo);
 			}
 			return;
 		}
 
+		// If role required, check role
 		if (requiredRole) {
-			authorized = hasRole(requiredRole);
-			if (!authorized && redirect) {
-				goto('/unauthorized');
+			if (hasRole(requiredRole)) {
+				authorized = true;
+			} else {
+				authorized = false;
+				if (redirect && browser) {
+					goto('/unauthorized');
+				}
 			}
 		} else {
 			authorized = true;
 		}
-	}
+
+		loading = false;
+	});
 </script>
 
 {#if loading}
