@@ -1,19 +1,21 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { initAuth, isAuthenticated } from '$lib/stores/auth';
+	import { getUserContext } from '$lib/stores/user.svelte';
 
-	if (browser) {
-		(async () => {
-			await initAuth();
+	const { user } = getUserContext();
+	let loaded = $state(false);
 
-			if (isAuthenticated) {
-				goto('/dashboard');
-			} else {
-				goto('/login');
-			}
-		})();
-	}
+	$effect(() => {
+		if (!browser) return;
+		if (user.id && !loaded) {
+			goto('/dashboard');
+			loaded = true;
+		} else if (!user.id && !loaded) {
+			goto('/login');
+			loaded = true;
+		}
+	});
 </script>
 
 <div class="flex h-screen flex-col items-center justify-center gap-6 text-gray-700">
