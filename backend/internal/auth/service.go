@@ -57,8 +57,8 @@ func (s *AuthServiceImpl) Logout(ctx context.Context) error {
 	return nil
 }
 
-func (s *AuthServiceImpl) CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error) {
-	return s.Repo.CreateUserOAuth(ctx, fullName, email)
+func (s *AuthServiceImpl) CreateUserOAuth(ctx context.Context, firstName, lastName, email string) (*User, error) {
+	return s.Repo.CreateUserOAuth(ctx, firstName, lastName, email)
 }
 
 func (s *AuthServiceImpl) GetUserByID(ctx context.Context, id int32) (*User, error) {

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/iankencruz/sabiflow/internal/shared/errors"
 	"github.com/iankencruz/sabiflow/internal/shared/response"
@@ -21,7 +22,7 @@ type AuthService interface {
 	Login(ctx context.Context, email, password string) (*User, error)
 	Logout(ctx context.Context) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error)
+	CreateUserOAuth(ctx context.Context, firstName, lastName, email string) (*User, error)
 	GetUserByID(ctx context.Context, id int32) (*User, error)
 }
 
@@ -178,7 +179,16 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Service.GetUserByEmail(ctx, googleUser.Email)
 	if err != nil {
-		user, err = h.Service.CreateUserOAuth(ctx, googleUser.Name, googleUser.Email)
+
+		parts := strings.Fields(googleUser.Name)
+		firstName := parts[0]
+		lastName := ""
+		if len(parts) > 1 {
+			lastName = strings.Join(parts[1:], " ")
+		}
+
+		user, err = h.Service.CreateUserOAuth(ctx, firstName, lastName, googleUser.Email)
+
 		if err != nil {
 			h.Logger.Error("Failed to create OAuth user", "err", err)
 			response.WriteJSON(w, http.StatusInternalServerError, "User creation failed", nil)

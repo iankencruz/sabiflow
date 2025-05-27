@@ -11,7 +11,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByID(ctx context.Context, id int32) (*User, error)
-	CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error)
+	CreateUserOAuth(ctx context.Context, firstName, lastName, email string) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	GetGroupPermissions(ctx context.Context, userID int32) ([]string, error)
 }
@@ -94,15 +94,16 @@ func (r *PgxUserRepository) GetByID(ctx context.Context, id int32) (*User, error
 	return &user, nil
 }
 
-func (r *PgxUserRepository) CreateUserOAuth(ctx context.Context, fullName, email string) (*User, error) {
+func (r *PgxUserRepository) CreateUserOAuth(ctx context.Context, firstName, lastName, email string) (*User, error) {
 	query := `
 		INSERT INTO auth.users (first_name, last_name, email, password, provider)
-		VALUES (@first_name, '', @email, '', 'google')
+		VALUES (@first_name, @last_name, @email, '', 'google')
 		RETURNING id, first_name, last_name, email, created_at, updated_at
 	`
 
 	args := pgx.NamedArgs{
-		"first_name": fullName,
+		"first_name": firstName,
+		"last_name":  lastName,
 		"email":      email,
 	}
 
