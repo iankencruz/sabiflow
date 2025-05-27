@@ -1,47 +1,40 @@
-<!-- / src/routes/login/+page.svelte -->
-
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
-	import { browser } from '$app/environment';
-	import { login, isAuthenticated, initAuth } from '$lib/stores/auth';
-	import { get } from 'svelte/store';
 	import { PUBLIC_API_URL } from '$env/static/public';
+	import { getUserContext } from '$lib/stores/user.svelte';
 
+	let { user, login } = getUserContext();
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
-	let redirectMessage = $state('');
 
-	const reason = page.url.searchParams.get('reason');
-
-	let redirectTo = page.url.searchParams.get('redirectTo') || '/dashboard';
-
-	if (browser) {
-		(async () => {
-			await initAuth();
-			if (get(isAuthenticated)) {
-				console.log('isAuthenticated $Store - redirect to dashboard');
-				goto('/dashboard');
-			}
-		})();
-	}
-
-	async function handleLogin(event: Event) {
-		event.preventDefault();
+	async function handleLogin() {
 		loading = true;
-		error = '';
 
-		const result = await login({ email, password });
+		try {
+			const res = await fetch('/api/v1/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password }),
+				credentials: 'include'
+			});
 
-		if (result.success) {
-			goto(redirectTo);
-		} else {
-			error = result.error || 'Login failed. Please check your credentials.';
+			if (res.ok) {
+				const result = await res.json();
+				console.log('Before login():', user);
+				login(result.data.user);
+				console.log('After login():', user);
+				goto('/dashboard');
+			} else {
+				const result = await res.json();
+				error = result.message || 'Invalid login';
+			}
+		} catch (err) {
+			error = 'Something went wrong. Please try again.';
+		} finally {
+			loading = false;
 		}
-
-		loading = false;
 	}
 </script>
 
@@ -158,6 +151,7 @@
 					</div>
 				</div>
 
+				<!-- Google OAuth2 -->
 				<div class="mt-6 grid grid-cols-2 gap-4">
 					<a
 						href={`${PUBLIC_API_URL}/auth/google/login`}

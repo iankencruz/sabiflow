@@ -253,28 +253,3 @@
 		</p>
 	</div>
 </div>
-
-<!-- <form onsubmit={handleSubmit} class="mx-auto mt-10 max-w-md space-y-4"> -->
-<!-- 	<h1 class="text-xl font-bold">Register</h1> -->
-<!---->
-<!-- 	<input bind:value={$form.first_name} placeholder="First name" class="input" required /> -->
-<!-- 	<input bind:value={$form.last_name} placeholder="Last name" class="input" required /> -->
-<!-- 	<input type="email" bind:value={$form.email} placeholder="Email" class="input" required /> -->
-<!-- 	<input -->
-<!-- 		type="password" -->
-<!-- 		bind:value={$form.password} -->
-<!-- 		placeholder="Password" -->
-<!-- 		class="input" -->
-<!-- 		required -->
-<!-- 	/> -->
-<!---->
-<!-- 	{#if $error} -->
-<!-- 		<p class="text-red-600">{$error}</p> -->
-<!-- 	{/if} -->
-<!---->
-<!-- 	{#if $success} -->
-<!-- 		<p class="text-green-600">{$success}</p> -->
-<!-- 	{/if} -->
-<!---->
-<!-- 	<button type="submit" class="btn btn-primary w-full">Register</button> -->
-<!-- </form> -->
